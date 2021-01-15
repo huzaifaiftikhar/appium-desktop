@@ -238,6 +238,7 @@ export default function session (state = INITIAL_STATE, action) {
       };
 
     case GET_SESSIONS_DONE:
+      console.warn(`Huzaifa GET_SESSIONS_DONE ${action.sessions}`);
       return {
         ...state,
         gettingSessions: false,

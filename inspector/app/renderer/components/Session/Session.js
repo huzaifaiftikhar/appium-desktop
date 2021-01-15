@@ -38,6 +38,7 @@ export default class Session extends Component {
   }
 
   async handleSelectServerTab (tab) {
+    console.warn(`Huzaifa selected tab = ${tab}`);
     const {changeServerType, addCloudProvider} = this.props;
     if (tab === ADD_CLOUD_PROVIDER) {
       addCloudProvider();

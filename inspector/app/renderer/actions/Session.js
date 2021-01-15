@@ -11,6 +11,8 @@ import CloudProviders from '../components/Session/CloudProviders';
 import { Web2Driver } from 'web2driver';
 import ky from 'ky/umd';
 
+let util_huz = require('util');
+
 export const NEW_SESSION_REQUESTED = 'NEW_SESSION_REQUESTED';
 export const NEW_SESSION_BEGAN = 'NEW_SESSION_BEGAN';
 export const NEW_SESSION_DONE = 'NEW_SESSION_DONE';
@@ -256,8 +258,9 @@ export function newSession (caps, attachSessId = null) {
         https = session.server.perfecto.ssl = false;
         break;
       case ServerTypes.browserstack:
-        host = process.env.BROWSERSTACK_HOST || 'hub-cloud.browserstack.com';
-        port = session.server.browserstack.port = 443;
+        host = session.server.browserstack.hostname = process.env.BROWSERSTACK_HOST || 'localhost';
+        console.warn(`Huzaifa session.server.browserstack.hostname = ${session.server.browserstack.hostname}`);
+        port = session.server.browserstack.port = 8080;
         path = session.server.browserstack.path = '/wd/hub';
         username = session.server.browserstack.username || process.env.BROWSERSTACK_USERNAME;
         desiredCapabilities['browserstack.source'] = 'appiumdesktop';
@@ -382,10 +385,11 @@ export function newSession (caps, attachSessId = null) {
 
 
     const hostname = username && accessKey ? `${username}:${accessKey}@${host}` : host;
+    console.warn(`Huzaifa the hostname is ${hostname}`);
     const serverOpts = {
       hostname,
       port: parseInt(port, 10),
-      protocol: https ? 'https' : 'http',
+      protocol: https ? 'http' : 'http',
       path,
       connectionRetryCount: CONN_RETRIES,
     };
@@ -404,9 +408,11 @@ export function newSession (caps, attachSessId = null) {
     let driver = null;
     try {
       if (attachSessId) {
+        console.warn(`Huzaifa attachSessId, serverOpts, desiredCapabilities = ${util_huz.inspect(attachSessId)}, ${util_huz.inspect(serverOpts)}, ${util_huz.inspect(desiredCapabilities)}`);
         driver = await Web2Driver.attachToSession(attachSessId, serverOpts);
         driver._isAttachedSession = true;
       } else {
+        console.warn(`Huzaifa attachSessId, serverOpts, desiredCapabilities = ${attachSessId}, ${serverOpts}, ${desiredCapabilities}`);
         driver = await Web2Driver.remote(serverOpts, desiredCapabilities);
       }
     } catch (err) {
@@ -556,6 +562,7 @@ export function setAttachSessId (attachSessId) {
  * Change the server type
  */
 export function changeServerType (serverType) {
+  console.warn(`Huzaifa [changeServerType] serverType = ${serverType}`);
   return async (dispatch, getState) => {
     await settings.set(SESSION_SERVER_TYPE, serverType);
     dispatch({type: CHANGE_SERVER_TYPE, serverType});
@@ -624,17 +631,25 @@ export function setSavedServerParams () {
 
 export function getRunningSessions () {
   return async (dispatch, getState) => {
+    console.warn(`${dispatch}`);
+    console.warn(`${getState}`);
     const avoidServerTypes = [
       'sauce', 'testobject'
     ];
     // Get currently running sessions for this server
     const state = getState().session;
+    console.warn(`Huzaifa state = ${util_huz.inspect(state)}`);
     const {server, serverType} = state;
+    console.warn(`Huzaifa server = ${util_huz.inspect(server)}`);
+    console.warn(`Huzaifa serverType = ${util_huz.inspect(serverType)}`);
     const serverInfo = server[serverType];
-    const {hostname, port, path, ssl} = serverInfo;
+    console.warn(`Huzaifa serverInfo = ${util_huz.inspect(serverInfo)}`);
+    const {hostname, port, path, ssl, username, accessKey} = serverInfo;
+    console.warn(`Huzaifa hostname, port, path, ssl, username, accessKey  = ${util_huz.inspect(hostname)}, ${util_huz.inspect(port)}, ${util_huz.inspect(path)}, ${util_huz.inspect(ssl)}, ${util_huz.inspect(username)}, ${util_huz.inspect(accessKey)}`);
 
     if (!hostname || !port || !path) {
       // no need to get sessions if we don't have complete server info
+      console.warn("Huzaifa no hostname port or path");
       return;
     }
 
@@ -646,7 +661,14 @@ export function getRunningSessions () {
 
     try {
       const adjPath = path.endsWith('/') ? path : `${path}/`;
-      const res = await ky(`http${ssl ? 's' : ''}://${hostname}:${port}${adjPath}sessions`).json();
+      // const res = await ky(`http${ssl ? 's' : ''}://${hostname}:${port}${adjPath}sessions`).json();
+      const res = await ky(`http${ssl ? '' : ''}://${hostname}:${port}${adjPath}sessions`, {
+        headers: {
+          'Authorization': `Basic ${btoa(`${username}:${accessKey}`)}` // need to add basic auth for some cloud providers
+        }
+      }).json();
+      console.warn(`Huzaifa res is ${util_huz.inspect(res)}`);
+      //dispatch({type: GET_SESSIONS_DONE, sessions: res}); // we do not sent value inside
       dispatch({type: GET_SESSIONS_DONE, sessions: res.value});
     } catch (err) {
       console.warn(`Ignoring error in getting list of active sessions: ${err}`); // eslint-disable-line no-console

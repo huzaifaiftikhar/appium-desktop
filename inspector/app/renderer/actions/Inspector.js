@@ -531,7 +531,9 @@ export function runKeepAliveLoop () {
       console.log('Pinging Appium server to keep session active'); // eslint-disable-line no-console
       try {
         await driver.getTimeouts(); // Pings the Appium server to keep it alive
-      } catch (ign) {}
+      } catch (ign) {
+        console.warn(`Huzaifa [runKeepAliveLoop] catch error = ${ign.toString()}`);
+      }
       const now = Date.now();
 
       // If the new command limit has been surpassed, prompt user if they want to keep session going
