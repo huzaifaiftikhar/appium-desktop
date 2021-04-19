@@ -9,6 +9,8 @@ import { setSessionDetails } from './Inspector';
 import i18n from '../../configs/i18next.config.renderer';
 import CloudProviders from '../components/Session/CloudProviders';
 
+const util = require('util');
+
 export const NEW_SESSION_REQUESTED = 'NEW_SESSION_REQUESTED';
 export const NEW_SESSION_BEGAN = 'NEW_SESSION_BEGAN';
 export const NEW_SESSION_DONE = 'NEW_SESSION_DONE';
@@ -660,8 +662,10 @@ export function getRunningSessions () {
 
     dispatch({type: GET_SESSIONS_REQUESTED});
     if (avoidServerTypes.includes(state.serverType)) {
+      console.log(`Debug [getRunningSessions] avoidServerTypes includes current server ${state.serverType} skipping event 'appium-client-get-sessions'`);
       dispatch({type: GET_SESSIONS_DONE});
     } else {
+      console.log(`Debug [getRunningSessions] sending event 'appium-client-get-sessions'`);
       ipcRenderer.send('appium-client-get-sessions', {
         host,
         port,
@@ -672,10 +676,12 @@ export function getRunningSessions () {
       });
       ipcRenderer.once('appium-client-get-sessions-response', (evt, e) => {
         const res = JSON.parse(e.res);
+        console.log(`Debug [getRunningSessions] got event 'appium-client-get-sessions-response' for server = ${state.serverType} and res = ${util.inspect(res)}`);
         dispatch({type: GET_SESSIONS_DONE, sessions: res.value});
         removeRunningSessionsListeners();
       });
-      ipcRenderer.once('appium-client-get-sessions-fail', () => {
+      ipcRenderer.once('appium-client-get-sessions-fail', (event, e) => {
+        console.warn(`Debug [getRunningSessions] got event 'appium-client-get-sessions-fail' and error = ${util.inspect(e)}`);
         dispatch({type: GET_SESSIONS_DONE});
         removeRunningSessionsListeners();
       });

@@ -17,6 +17,8 @@ const LOG_SEND_INTERVAL_MS = 250;
 
 const defaultEnvironmentVariables = _.clone(process.env);
 
+const util = require('util');
+
 let server = null;
 let logWatcher = null;
 let batchedLogs = [];
@@ -338,9 +340,11 @@ const getCurrentSessions = _.debounce(async (evt, data) => {
     const res = username && accessKey
       ? await request(`http${ssl ? 's' : ''}://${username}:${accessKey}@${host}:${port}${appiumPath}/sessions`)
       : await request(`http${ssl ? 's' : ''}://${host}:${port}${appiumPath}/sessions`);
+    console.log(`Debug [getCurrentSessions] res = ${util.inspect(res)}`);
     evt.sender.send('appium-client-get-sessions-response', {res});
   } catch (e) {
-    evt.sender.send('appium-client-get-sessions-fail');
+    console.warn(`Debug [getCurrentSessions] error e = ${util.inspect(e)}`);
+    evt.sender.send('appium-client-get-sessions-fail', util.inspect(e));
   }
 }, 2000);
 
